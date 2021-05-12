@@ -1,0 +1,285 @@
+\documentclass{beamer}
+%% Possible paper sizes: a0, a0b, a1, a2, a3, a4.
+%% Possible orientations: portrait, landscape
+%% Font sizes can be changed using the scale option.
+
+\usetheme{Boadilla}
+\usecolortheme{beaver}
+\beamertemplatenavigationsymbolsempty
+% \usecolortheme{Entrepreneur}
+% \usecolortheme{ConspiciousCreep}  %% VERY garish.
+% Themes by Lian Tze Lim found here: https://www.overleaf.com/latex/templates/yet-another-beamerposter-theme-with-variable-sizes-and-colour-themes-portrait-version/jgzfyrgpmvgk
+% colourthemes from \url{http://colourlovers.com}
+
+\input{macros}
+
+\usepackage{hyperref}
+\usepackage{color}
+\definecolor{mymauve}{rgb}{0.58,0,0.82}
+
+\usepackage{units}
+\usepackage{listings}
+%\usepackage[format=hang,justification=centering]{caption}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+%\usepackage{libertine}
+%\usepackage[scaled=0.92]{inconsolata}
+%\usepackage[libertine]{newtxmath}
+
+\renewcommand{\figurename}{}
+
+\author[J.-F. Caron]{Jean-Fran\c{c}ois Caron}
+\title{PyROOT in the Lab}
+\institute{Queen's University}
+% Optional foot image
+%\footimage{\includegraphics[height=1.6cm]{figures/UH_Red}}
+
+\begin{document}
+\lstset{language=Python, showstringspaces=false, commentstyle=\ttfamily}
+\lstset{keywordstyle=\color{blue},commentstyle=\color{brown},identifierstyle=\color{black}}
+\lstset{stringstyle=\color{teal}, basicstyle=\ttfamily\tiny}
+\begin{frame}
+\titlepage
+\end{frame}
+
+\begin{frame}\frametitle{What is PyROOT?}
+PyROOT is a bridge allowing you to call C++ ROOT functions from a python program. It is automatically generated from the ROOT source code, so the classes and functions are all equivalent.
+
+\begin{columns}[T]
+\begin{column}{0.5\textwidth}
+Pros
+\begin{itemize}
+\item Few new interfaces to learn.
+\item High-performance with built-in ROOT objects.
+\item Flexibility and scope of Python language and standard library.
+\item Can add-in 3rd-party numerical python libraries.
+\end{itemize} 
+\end{column}
+
+\begin{column}{0.5\textwidth}
+Cons
+\begin{itemize}
+\item Python-side performance can be worse than doing it in C++.
+\item Need to code-switch between Python and C++.
+\item More libraries to install.
+\item Sometimes need workarounds for ROOT weirdness.
+\end{itemize}
+\end{column}
+\end{columns}
+\vspace{0.2cm}
+
+My strategy: use compiled C++ code with ROOT libraries for heavy number-crunching, but use PyROOT for exploration, interactive use, and plotting. 
+
+\end{frame}
+
+\begin{frame}\frametitle{Your Primary Tool: TGraph}
+The ROOT TGraph is a basic 2D graph of $X$ vs $Y$.
+\lstinputlisting[language=Python]{demo_tgraph.py}
+Numpy arrays can also be used instead of array.array.\\
+You can also create an empty \lstinline$ROOT.TGraph(N)$ and fill the points in one by one using \lstinline$g.SetPoint(i,a,b)$.
+
+\small{
+Exercises (3 minutes):
+\begin{enumerate}
+\item Try plotting \lstinline$ROOT.TMath.Sin$ or your favourite function.
+\item Try \lstinline$g.GetXaxis().SetTitle("foo")$ and \lstinline$g.SetTitle("bar")$.
+\end{enumerate}
+}
+\label{demo_tgraph}
+\end{frame}
+
+\begin{frame}\frametitle{Histograms: TH1D}
+Histograms are frequently used in particle physics. In ROOT they play a more central role than even TGraphs.  You create them with a certain range of bins and fill them with values.
+
+\lstinputlisting[language=Python]{demo_th1d.py}
+
+The TH1D class is full-featured: you can set variable bin widths, fill with different weights, change bin statistics, interface to fitting, etc.
+
+\tiny{Note: there is no reason to use the other TH1* types.}
+\end{frame}
+
+\begin{frame}\frametitle{Reading Files 0: Fake Data}
+So you can make graphs, but how do you get the data from a file into the program?
+First, let's generate an example text file to work with.
+
+\lstinputlisting[language=Python]{demo_generate_data.py}
+Exercise (1 minute): Examine the output file with \lstinline$wc$ and \lstinline$less$.
+\label{generate}
+\end{frame}
+
+\begin{frame}\frametitle{Reading Files 1: Manually Filling a TTree}
+\lstinputlisting[language=Python]{demo6_ttree_manual.py}
+\end{frame}
+
+\begin{frame}\frametitle{Reading Files 2: TTree.ReadFile}
+\lstinputlisting[language=Python]{demo2_ttree_readfile.py}
+\label{convert}
+\end{frame}
+
+% \begin{frame}\frametitle{Reading Files 2: numpy.loadtxt}
+% Pros: Can use ``slicing'' syntax and other numpy goodness. Can use optional converter argument.
+
+% Cons: No built-in way to save to optimized file, still need a plotting system.
+% \lstinputlisting[language=Python]{demo3_numpy_loadtxt.py}
+
+% After this you would manipulate the data to fill numpy arrays with the quantities to be graphed like in slide \ref{demo_tgraph}.
+% \end{frame}
+
+% \begin{frame}\frametitle{Reading Files 3: Built-in CSV module}
+% Pros: More structured than reading a plain file. Can handle Excel/spreadsheet files. Very flexible since you just read strings.
+
+% Cons: Slower than numpy.loadtxt. Manual conversion to numbers.
+% \lstinputlisting[language=Python]{demo5_csv.py}
+
+% Inside the loop you would do processing or fill arrays to graph with ROOT.  You can also parse the \# comments to read parameters like tau and the random seed.
+
+% % You could also read the file normally using python's normal file objects, but this is error-prone; I would not recommend it:
+% % \lstinputlisting[language=Python]{demo4_python_file.py}
+% \end{frame}
+
+% \begin{frame}\frametitle{Reading Data Files 4}
+% So which way should you use?
+
+% Any of them, depending on your needs and the format of your input file.  If you have a large file ($ > \unit[10]{MB}$), I would highly recommend making a TTree inside a TFile for the speed gains.  
+
+% If your input file is difficult to work with (\ie TTree::ReadFile won't work), you will need to fill the tree manually.
+% \end{frame}
+
+\begin{frame}\frametitle{Working with TTrees}
+Exercise (5 minutes): enter these commands interactively in python.
+Remember to use tab-completion to save on typing!
+\lstinputlisting[language=Python]{demo7_work_trees.py}
+\end{frame}
+
+\begin{frame}\frametitle{Making Plots}
+% TH*, TGraph(Errors), THStack and TMultiGraph
+% How to make from TTree or from arrays.
+% Colour, axes, legends
+\lstinputlisting[language=Python]{demo8_ttree_draw.py}
+Exercise (3 minutes):
+\begin{enumerate}
+\item Draw a histogram or graph of a quantity of your choosing, with proper axis labels.
+\end{enumerate}
+\end{frame}
+
+\begin{frame}\frametitle{Saving and Exporting}
+% TFile, output formats: tex, pdf, png
+To properly save figures, you need to save the TCanvas, not the TGraph or TH1.  The active canvas can be saved with \lstinline$ROOT.gPad.SaveAs("foo.pdf")$ or:
+\lstinputlisting[language=Python]{demo9_saving.py}
+Exercise (2 minutes):
+\begin{enumerate}
+\item Save the figure from the last exercise in the four formats shown.  
+\item Try to view the ouput files (as text or as figures)\\
+(\lstinline$evince$ for pdf, \lstinline$eog$ for png).
+\item Look at the size difference in the output files with \lstinline$ls -lh plots$.
+\end{enumerate}
+\label{saving}
+\end{frame}
+
+\begin{frame}\frametitle{Aside: The Power of PyROOT}
+\small{
+You can add all sorts of functionality in Python.  Here is a function I made to automatically timestamp and move a file.  I use it before saving figures.
+\lstinputlisting[language=Python]{ArchiveExisting.py}
+You could write this in C++ too, but in Python it's way easier!\\
+Homework: Use the python documentation to figure out exactly how this works.
+}
+\end{frame}
+
+\begin{frame}\frametitle{Advanced Drawing}
+\lstinputlisting[language=Python]{demo9b_advanced_drawing.py}
+\small{This method can take you surprisingly far, and it's very fast because the looping happens outside of Python.}
+\end{frame}
+
+\begin{frame}\frametitle{Stacking Histograms}
+\lstinputlisting[language=Python]{demo10_stacks.py}
+\label{thstack}
+\end{frame}
+
+\begin{frame}\frametitle{Stacking Graphs}
+\lstinputlisting[language=Python]{demo11_stacks.py}
+\end{frame}
+
+
+\begin{frame}\frametitle{Error Bars}
+Use TGraphErrors, TGraphAsymmErrors, etc.
+\lstinputlisting[language=Python]{demo12_errors.py}
+Unfortunately you cannot create TGraphErrors directly with TTree.Draw.
+Exercise (0.5 minutes):
+\begin{enumerate}
+\item Try \lstinline$g.Print()$.
+\end{enumerate}
+
+\end{frame}
+
+\begin{frame}\frametitle{Aside: The Power of PyROOT 2}
+\lstinputlisting[language=Python]{AddErrors.py}
+\end{frame}
+
+\begin{frame}\frametitle{Basic Fitting 1}
+ROOT has too many ways to fit things.  This is just one way.
+\lstinputlisting[language=Python]{demo13_fit.py}
+Note the same process works for TGraphs.
+Exercise (1 minute):
+\begin{enumerate}
+\item Do \lstinline$ftr.$ and press tab twice.
+\item Try some of the interesting methods listed.
+\end{enumerate}
+
+\label{fitting1}
+\end{frame}
+
+\begin{frame}\frametitle{Basic Fitting 2}
+You can define your own function with a TF1 or with a C++ function.
+\lstinputlisting[language=Python]{demo14_fit2.py}
+\end{frame}
+
+\begin{frame}\frametitle{Compiled C++ Extensions}
+\lstinputlisting[language=C]{demo15_cpp_extension.C}
+\lstinputlisting[language=Python]{demo15_usage.py}
+Exercise (3 minutes):
+\begin{enumerate}
+\item Run \lstinline$demo15_usage.py$ with \lstinline$ipython -i$
+\item Use the \lstinline$\%timeit$ "magic" to compare the speed of C++ and Python.
+\end{enumerate}
+\end{frame}
+
+\begin{frame}\frametitle{Neglected Topics}
+% TFile, output formats: tex, pdf, png
+\begin{enumerate}
+\item ``Collection'' objects in TTrees
+\item 3D and higher plots, profile plots
+\item TDataFrame
+\item ``Out parameters''
+\item TTree.Scan
+\end{enumerate}
+\end{frame}
+
+\begin{frame}\frametitle{Getting Help}
+% ROOT Forum, python IRC, C++ IRC
+% Reading reference pages
+% Reading source code
+\begin{enumerate}
+\item The ROOT forum is very active: \url{https://root-forum.cern.ch/}
+\item ROOT User's Guide: \url{https://root.cern.ch/root/htmldoc/guides/users-guide/ROOTUsersGuide.html}
+\item ROOT Reference Guide: \url{https://root.cern/doc/master/}
+\item PyROOT-specific tutorials:\\ \small{\url{https://root.cern/doc/master/group__tutorial__pyroot.html}}
+\item The FreeNode IRC channels \lstinline$\#python$ and \lstinline$\#c++-basic$ are helpful.
+\item Python official documentation: \url{https://docs.python.org/3/}
+\end{enumerate}
+\end{frame}
+
+\begin{frame}\frametitle{Major Exercise/Homework}
+You will probably not finish (or start?) this during the workstop time.
+\small{
+\begin{enumerate}
+\item Generate a new data set (as on slide \ref{generate}) with the binomial distribution for\\ N = 20, 200, and 2000 trials.
+\item Convert this data set to a ROOT TFile with a TTree in it (as on slide \ref{convert}).
+\item Plot the distributions in TH1Ds and put them together in a THStack \\(as on slide \ref{thstack}).
+\item Fit each of the distributions with a Gaussian function, note the Chi2/NDf (as on slide \ref{fitting1}).
+\item Save the produced plot in your favourite format (as on slide \ref{saving}).
+\item Bonus: put the fit results in a TPaveText on top of the THStack plot.
+\end{enumerate}
+}
+\end{frame}
+
+\end{document}
